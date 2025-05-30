@@ -4,6 +4,7 @@ import openai
 from src.base_game.base_agent import BaseAgent, BaseInstructions
 from src.utils.common_utils import check_json_list
 
+
 class CountdownInstructions(BaseInstructions):
     """
     Class to store all the prompts and instructions for the countdown problem.
@@ -11,9 +12,9 @@ class CountdownInstructions(BaseInstructions):
     This class centralizes all the templates used for interacting with the LLM,
     including system instructions, user requests, response formats, and error messages.
     """
+
     def __init__(self):
         # System instructions for MCTS
-        super().__init__()
         self.system_instruction_prior = """
 You're playing the Countdown Numbers Game. Let me explain the rules and how to solve it:
 
@@ -487,10 +488,12 @@ Replace `<dictionary_of_values>` with a dictionary mapping operation keys to val
         # Common error handling messages
         self.try_again = f"""Your response must include a valid JSON object enclosed in a boxed format like this: \\boxed{{ {{...}} }}. Please ensure you follow this exact format and that your JSON is properly formatted according to the provided instructions."""
         self.correct_length = f"""Please ensure that the operation_scores dictionary contains scores for all possible operations. Each operation key should have a corresponding score value. Alternatively, if you're providing a list, ensure it has exactly one score per operation. All scores should sum to 1.0. Respond in JSON format such that json.loads(json_resp) will not return any errors."""
-        
+
         # Common regex parsing
         self.json_regex = r'\\boxed\{\s*(\{(?:[^{}]+|\{(?:[^{}]+|\{[^{}]*\})*\})*\})\s*\}'
-    
+
+        super().__init__()
+
     def get_system_instruction(self, query_type):
         """
         Get the system instruction for the specified query type.
@@ -511,7 +514,7 @@ Replace `<dictionary_of_values>` with a dictionary mapping operation keys to val
             return self.system_instruction_child_values
         else:
             raise ValueError(f"Unknown query type: {query_type}")
-    
+
     def generate_request(self, query_type, **kwargs):
         """
         Generate a request for the specified query type with the given parameters.
@@ -527,13 +530,13 @@ Replace `<dictionary_of_values>` with a dictionary mapping operation keys to val
         """
         if query_type == "prior":
             return self.user_request_prior.format(
-                current_sequence=kwargs.get("current_sequence"), 
+                current_sequence=kwargs.get("current_sequence"),
                 action_list=kwargs.get("action_list"),
                 prior_response_format=self.prior_response_format
             )
         elif query_type == "value":
             return self.user_request_value.format(
-                current_sequence=kwargs.get("current_sequence"), 
+                current_sequence=kwargs.get("current_sequence"),
                 action_list=kwargs.get("action_list"),
                 value_response_format=self.value_response_format
             )
@@ -552,12 +555,14 @@ Replace `<dictionary_of_values>` with a dictionary mapping operation keys to val
         else:
             raise ValueError(f"Unknown query type: {query_type}")
 
+
 class CountdownAgent(BaseAgent):
     """
     Agent class for countdown problem solvers.
     
     This class handles communication with LLMs to assist in solving countdown puzzles.
     """
+
     def __init__(self, model, **kwargs):
         """
         Initialize the CountdownAgent.
@@ -576,7 +581,7 @@ class CountdownAgent(BaseAgent):
         self.queries = []
         self.responses = []
         self.reasoning = kwargs.get("reasoning", 0)  # Whether to use reasoning mode (0=disabled, 1=enabled)
-        
+
         # Initialize the CountdownInstructions class to access all instructions
         self.instructions = CountdownInstructions()
 
@@ -584,10 +589,10 @@ class CountdownAgent(BaseAgent):
         """Reset the message history based on the query type."""
         # Clear the message history
         self.message_history = []
-        
+
         # Get the appropriate system instruction for this query type
         system_instruction = self.instructions.get_system_instruction(query_type)
-        
+
         if self.model_type == "nvidia":
             # For NVIDIA models, use user messages instead of system messages
             message = {"role": "user", "content": system_instruction}
@@ -610,26 +615,26 @@ class CountdownAgent(BaseAgent):
         # Also add to queries for tracking (don't add assistant messages to queries)
         if new_message["role"] != "assistant":
             self.queries.append(new_message)
-        
+
         if not self.message_history:
             # If history is empty, just add the message
             self.message_history.append(new_message)
             return
-        
+
         last_message = self.message_history[-1]
-        
+
         # Check if both messages are of the same type
         if last_message["role"] == new_message["role"]:
             # Combine the content with a newline separator
             combined_content = last_message["content"] + "\n\n" + new_message["content"]
-            
+
             # Replace the last message with a new combined message of the same type
             new_message_dict = {"role": last_message["role"], "content": combined_content}
-            
+
             # If it's an assistant message and has response_metadata, preserve it
             if last_message["role"] == "assistant" and "response_metadata" in last_message:
                 new_message_dict["response_metadata"] = last_message["response_metadata"]
-            
+
             self.message_history[-1] = new_message_dict
         else:
             # If different types, just append
@@ -652,11 +657,11 @@ class CountdownAgent(BaseAgent):
             "messages": messages,
             "timeout": self.timeout
         }
-        
+
         # Add response format if specified
         if response_format:
             params["response_format"] = response_format
-        
+
         # Add parameters based on reasoning mode
         if self.reasoning == 1:
             # Parameters for reasoning mode
@@ -666,9 +671,9 @@ class CountdownAgent(BaseAgent):
             # Parameters for non-reasoning mode
             params["max_tokens"] = self.max_tokens
             params["temperature"] = self.temperature
-        
+
         return params
-    
+
     def _handle_retry(self, message_content):
         """
         Helper method to handle retry attempts for boxed JSON responses.
@@ -682,41 +687,42 @@ class CountdownAgent(BaseAgent):
         # Add the retry message to history
         retry_message = {"role": "user", "content": message_content}
         self.update_message_history(retry_message)
-        
+
         # Convert message history to OpenAI format (removing extra fields)
         openai_messages = [{"role": msg["role"], "content": msg["content"]} for msg in self.message_history]
-        
+
         # Get API parameters for retry
         retry_params = self._get_api_params(
-            openai_messages, 
+            openai_messages,
             response_format={"type": "text"}
         )
-        
+
         # Call OpenAI API for correction
         retry_response = self.model.chat.completions.create(**retry_params)
-        
+
         # Extract completion content
         corrected_content = retry_response.choices[0].message.content
-        
+
         # Create token usage info
         token_usage = {
             "prompt_tokens": retry_response.usage.prompt_tokens,
             "completion_tokens": retry_response.usage.completion_tokens,
             "total_tokens": retry_response.usage.total_tokens
         }
-        
+
         # Create assistant message response
-        corrected_act_message = {"role": "assistant", "content": corrected_content, "response_metadata": {"token_usage": token_usage}}
-        
+        corrected_act_message = {"role": "assistant", "content": corrected_content,
+                                 "response_metadata": {"token_usage": token_usage}}
+
         # Add corrected AI response to history
         self.update_message_history(corrected_act_message)
-        
+
         # Track response separately
         self.responses.append(corrected_act_message)
-        
+
         # Parse JSON from response
         json_lst = regex.findall(self.instructions.json_regex, corrected_content)
-        
+
         return json_lst, corrected_content, token_usage
 
     def _ask(self, query_type, attempt_num, **kwargs):
@@ -728,65 +734,66 @@ class CountdownAgent(BaseAgent):
             "role": "user",
             "content": self.instructions.generate_request(query_type=query_type, **kwargs)
         }
-        
+
         # Use the new method to update message history
         self.update_message_history(user_message)
-        
+
         # Convert message history to OpenAI format (removing any extra fields like response_metadata)
         openai_messages = [{"role": msg["role"], "content": msg["content"]} for msg in self.message_history]
-        
+
         # Get API parameters
         params = self._get_api_params(openai_messages)
-        
+
         # Call OpenAI API directly using self.model
         response = self.model.chat.completions.create(**params)
         if isinstance(response, str):
             raise ValueError(f"Response is of type str: {response}")
         # Extract completion content
         completion_content = response.choices[0].message.content
-        
+
         # Create AI message response with metadata
         token_usage = {
             "prompt_tokens": response.usage.prompt_tokens,
             "completion_tokens": response.usage.completion_tokens,
             "total_tokens": response.usage.total_tokens
         }
-        
-        act_message = {"role": "assistant", "content": completion_content, "response_metadata": {"token_usage": token_usage}}
-        
+
+        act_message = {"role": "assistant", "content": completion_content,
+                       "response_metadata": {"token_usage": token_usage}}
+
         # Add AI response to message history
         self.update_message_history(act_message)
-        
+
         # Still track all responses separately
         self.responses.append(act_message)
-        
+
         # Handle response parsing and validation logic
         json_lst = regex.findall(self.instructions.json_regex, act_message["content"])
         full_response = act_message["content"]
-        
+
         # Check if we have a properly formatted boxed JSON response
         if len(json_lst) == 0:
             # No properly boxed JSON found - try using the try_again prompt
             print("Response doesn't contain properly boxed JSON. Requesting correction with try_again prompt...")
-            
+
             # Handle retry
             json_lst, full_response, token_usage = self._handle_retry(self.instructions.try_again)
-        
+
         resp_dict = check_json_list(json_lst)
         if resp_dict is None:
             # If we couldn't parse any JSON, this will trigger a retry in the ask() method
             raise ValueError(f"Error loading agent message: {json_lst}")
-            
+
         # Handle different response formats based on query type
         if query_type == "prior":
             resp = resp_dict["operation_scores"]
             # Validate response format and ensure it's a dictionary
             original_action_list = kwargs.get("action_list", {})
-            
+
             # Convert the action list to a dictionary if it's not already
             if isinstance(original_action_list, list):
                 original_action_list = {i: action for i, action in enumerate(original_action_list)}
-            
+
             # Check if the response is in the correct dictionary format
             if not isinstance(resp, dict):
                 print(f"Warning: Prior response is not a dictionary: {resp}")
@@ -796,15 +803,15 @@ class CountdownAgent(BaseAgent):
                     if len(resp) != len(original_action_list):
                         error_msg = f"Prior response list length ({len(resp)}) doesn't match action list length ({len(original_action_list)})"
                         print(f"Warning: {error_msg}")
-                        
+
                         # Try to correct the format with a specific message
                         retry_json_lst, full_response, _ = self._handle_retry(self.instructions.correct_length)
-                        
+
                         if retry_json_lst:
                             retry_resp_dict = check_json_list(retry_json_lst)
                             if retry_resp_dict and "operation_scores" in retry_resp_dict:
                                 retry_resp = retry_resp_dict["operation_scores"]
-                                
+
                                 # Check if the corrected response is properly formatted
                                 if isinstance(retry_resp, dict):
                                     # Use the corrected dictionary response
@@ -838,7 +845,7 @@ class CountdownAgent(BaseAgent):
                     resp = float(resp)
                 except (ValueError, TypeError):
                     raise ValueError(f"Could not convert value response to float: {resp}")
-            
+
             # Ensure value is between 0 and 1
             if not (0 <= resp <= 1):
                 raise ValueError(f"Value {resp} is outside the range [0,1]")
@@ -848,11 +855,11 @@ class CountdownAgent(BaseAgent):
             resp = resp_dict["operation_values"]
             # Validate response format and ensure it's a dictionary
             original_action_list = kwargs.get("action_list", {})
-            
+
             # Convert the action list to a dictionary if it's not already
             if isinstance(original_action_list, list):
                 original_action_list = {i: action for i, action in enumerate(original_action_list)}
-            
+
             # Check if the response is in the correct dictionary format
             if not isinstance(resp, dict):
                 print(f"Warning: Child values response is not a dictionary: {resp}")
@@ -862,15 +869,15 @@ class CountdownAgent(BaseAgent):
                     if len(resp) != len(original_action_list):
                         error_msg = f"Child values response list length ({len(resp)}) doesn't match action list length ({len(original_action_list)})"
                         print(f"Warning: {error_msg}")
-                        
+
                         # Try to correct the format with a specific message
                         retry_json_lst, full_response, _ = self._handle_retry(self.instructions.correct_length)
-                        
+
                         if retry_json_lst:
                             retry_resp_dict = check_json_list(retry_json_lst)
                             if retry_resp_dict and "operation_values" in retry_resp_dict:
                                 retry_resp = retry_resp_dict["operation_values"]
-                                
+
                                 # Check if the corrected response is properly formatted
                                 if isinstance(retry_resp, dict):
                                     # Use the corrected dictionary response
@@ -882,7 +889,8 @@ class CountdownAgent(BaseAgent):
                                     print(f"Converted corrected response list to dictionary: {resp}")
                                 else:
                                     # Still incorrect format or length
-                                    raise ValueError(f"Child values response format or length still incorrect after retry")
+                                    raise ValueError(
+                                        f"Child values response format or length still incorrect after retry")
                             else:
                                 # No valid operation_values in retry response
                                 raise ValueError(f"No valid operation_values in retry response: {retry_resp_dict}")
@@ -896,7 +904,7 @@ class CountdownAgent(BaseAgent):
                             print(f"Converted child values response from list to dictionary: {resp}")
                         except Exception as e:
                             raise ValueError(f"Could not convert child values response to dictionary: {e}")
-            
+
             # Ensure all values in the dictionary are floats between 0 and 1
             validated_resp = {}
             for key, value in resp.items():
@@ -908,12 +916,12 @@ class CountdownAgent(BaseAgent):
                         raise ValueError(f"Child value {value_float} for key {key} is outside the range [0,1]")
                 except (ValueError, TypeError):
                     raise ValueError(f"Could not convert child value '{value}' for key {key} to float")
-            
+
             # Replace the original response with the validated one
             resp = validated_resp
         else:
             raise ValueError(f"Unknown query type: {query_type}")
-            
+
         return {"full_response": full_response,
                 "resp": resp,
                 "token_usage": token_usage}
@@ -933,10 +941,12 @@ class CountdownAgent(BaseAgent):
                 with attempt:
                     try:
                         self.reset(query_type)
-                        resp_dict = self._ask(query_type=query_type, attempt_num=attempt.retry_state.attempt_number, **kwargs)
+                        resp_dict = self._ask(query_type=query_type, attempt_num=attempt.retry_state.attempt_number,
+                                              **kwargs)
                         return resp_dict
                     except (openai.BadRequestError, openai.RateLimitError) as e:
-                        if any(phrase in str(e).lower() for phrase in ["maximum context length", "content too long", "token limit", "tokens in your"]):
+                        if any(phrase in str(e).lower() for phrase in
+                               ["maximum context length", "content too long", "token limit", "tokens in your"]):
                             print("Model exceeded maximum context length, stopping current game.")
                             return {
                                 "full_response": str(e),

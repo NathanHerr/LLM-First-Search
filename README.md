@@ -222,3 +222,78 @@ Each script contains a `run` function tailored to the game domain, maintaining a
     --batch-size 1 \
     --session-prefix game
 ```
+
+## 📊 Analysis
+
+After running experiments, you can analyze the results using the included analysis script. The script automatically detects available methods and tasks from your result directories and generates comprehensive comparisons.
+
+### Basic Analysis
+
+```bash
+# Auto-detect all methods and tasks
+python src/simple_analysis.py \
+    --data_dir ./data/countdown/results \
+    --output_dir ./analysis/countdown
+
+# Analyze specific model
+python src/simple_analysis.py \
+    --data_dir ./data/sudoku/results \
+    --output_dir ./analysis/sudoku \
+    --model gpt-4o
+
+# Include only specific methods
+python src/simple_analysis.py \
+    --data_dir ./data/countdown/results \
+    --output_dir ./analysis/countdown \
+    --methods "mcts,bestfs,lfs"
+```
+
+### Generated Outputs
+
+The analysis script automatically generates:
+
+#### 📈 Visualizations
+* **`win_rates.png`**: Bar chart comparing win rates across methods and tasks
+* **`token_usage.png`**: Bar chart comparing average token usage across methods
+* **`efficiency.png`**: Scatter plot showing win rate vs token usage (efficiency analysis)
+
+#### 📋 Summary Tables
+* **`summary.xlsx`**: Detailed Excel spreadsheet with all metrics
+* **`summary.csv`**: CSV version of the summary data
+
+#### 🖥️ Console Output
+The script prints a detailed summary to the console:
+
+```
+📊 SUMMARY:
+================================================================================
+
+Countdown (diff=3):
+----------------------------------------
+  mcts        : 85.0% win rate, 1250 tokens
+  bestfs      : 78.0% win rate, 950 tokens
+  lfs         : 92.0% win rate, 1100 tokens
+  tot_bfs     : 70.0% win rate, 1400 tokens
+
+Sudoku (4x4, medium):
+----------------------------------------
+  mcts        : 60.0% win rate, 2100 tokens
+  bestfs      : 55.0% win rate, 1800 tokens
+  lfs         : 75.0% win rate, 1900 tokens
+```
+
+### Key Metrics
+
+The analysis automatically computes and compares:
+
+* **Win Rate**: Percentage of games solved successfully
+* **Token Usage**: Average number of tokens consumed per game
+* **Efficiency**: Win rate relative to computational cost
+* **Game Coverage**: Number of games attempted and solved
+
+### Analysis Tips
+
+* Run analysis on specific subsets using the `--methods` parameter to focus comparisons
+* Compare the same model across different tasks to understand method strengths
+* Use the efficiency plots to identify methods that achieve good win rates with lower token costs
+* The Excel output provides detailed breakdowns for further statistical analysis

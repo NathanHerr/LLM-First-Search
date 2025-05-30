@@ -1,4 +1,6 @@
+import json
 import random
+import time
 from collections import deque
 
 from tqdm import tqdm
@@ -13,7 +15,7 @@ from src.sudoku_game.sudoku_node import SudokuNode
 # Import utility functions
 from src.utils.common_utils import *
 from src.utils.common_utils import get_standard_parser
-from src.utils.countdown_utils import mult_heuristic, json, get_countdown_data_path
+from src.utils.countdown_utils import mult_heuristic, get_countdown_data_path
 # Import common tree components
 from src.utils.tree_utils import PathNode, Explorer
 from src.utils.sudoku_utils import *

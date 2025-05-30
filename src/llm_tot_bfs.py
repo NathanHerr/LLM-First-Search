@@ -1,3 +1,4 @@
+import json
 import pickle
 import random
 import time
@@ -21,8 +22,9 @@ from src.utils.common_utils import (
     save_game_state,
     load_game_state,
     get_game_output_path, create_openai_client, get_standard_parser,
+    create_sorted_nodes_by_value,
 )
-from src.utils.countdown_utils import mult_heuristic, json, evaluate_child_node_values, \
+from src.utils.countdown_utils import mult_heuristic, evaluate_child_node_values, \
     get_countdown_data_path
 # Import common tree components
 from src.utils.tree_utils import PathNode, Explorer
@@ -42,23 +44,6 @@ Support for both Countdown and Sudoku puzzle types.
 """
 
 load_dotenv()
-
-# Custom Node wrapper for value-ordered lists
-class ValuedNode:
-    def __init__(self, node, value, use_adjusted_value=False):
-        self.node = node
-        self.value = value
-        self.use_adjusted_value = use_adjusted_value
-        
-        # If using adjusted value and it's available, use that for comparison
-        if use_adjusted_value and node.adjusted_value is not None:
-            self.comparison_value = node.adjusted_value
-        else:
-            self.comparison_value = value
-    
-    def __lt__(self, other):
-        # For ordered list, we'll use regular less-than (not reversed)
-        return self.comparison_value < other.comparison_value
 
 def parse_args():
     parser = get_standard_parser()
@@ -141,7 +126,7 @@ def run_countdown(args, model):
             nodes_to_explore = []
             for child in root_node.children:
                 if child.value is not None:
-                    nodes_to_explore.append(ValuedNode(child, child.value))
+                    nodes_to_explore.append(child)
             
             # Main ToT-BFS loop
             while True:
@@ -157,10 +142,10 @@ def run_countdown(args, model):
                 
                 print(f"Current nodes to explore: {len(nodes_to_explore)}")
                 
-                # Sort nodes by their values (they're already sorted by bisect, but we need to reverse for highest first)
-                selected_valued_nodes = sorted(nodes_to_explore, reverse=True)[:args.top_n]
-                selected_nodes = [vn.node for vn in selected_valued_nodes]
-                best_node = selected_nodes[0]  # Best node is the first one after sorting
+                # Sort nodes by their values and take top N (highest values last in ascending order)
+                sorted_nodes = create_sorted_nodes_by_value(nodes_to_explore)
+                selected_nodes = sorted_nodes[-args.top_n:]  # Take top N nodes
+                best_node = selected_nodes[-1]  # Best node is the last one (highest value)
                 
                 print(f"Selected {len(selected_nodes)} nodes to expand")
                 
@@ -186,7 +171,7 @@ def run_countdown(args, model):
                     # Add all children with values to the nodes_to_explore list
                     for child in node.children:
                         if child.value is not None:
-                            nodes_to_explore.append(ValuedNode(child, child.value))
+                            nodes_to_explore.append(child)
                 
                 atts += 1
                 
@@ -347,7 +332,7 @@ def run_sudoku(args, model):
             nodes_to_explore = []
             for child in root_node.children:
                 if child.value is not None:
-                    nodes_to_explore.append(ValuedNode(child, child.value))
+                    nodes_to_explore.append(child)
 
             # Main ToT-BFS loop
             while True:
@@ -363,10 +348,10 @@ def run_sudoku(args, model):
                 
                 print(f"Current nodes to explore: {len(nodes_to_explore)}")
                 
-                # Sort nodes by their values (they're already sorted by bisect, but we need to reverse for highest first)
-                selected_valued_nodes = sorted(nodes_to_explore, reverse=True)[:args.top_n]
-                selected_nodes = [vn.node for vn in selected_valued_nodes]
-                best_node = selected_nodes[0]  # Best node is the first one after sorting
+                # Sort nodes by their values and take top N (highest values last in ascending order)
+                sorted_nodes = create_sorted_nodes_by_value(nodes_to_explore)
+                selected_nodes = sorted_nodes[-args.top_n:]  # Take top N nodes
+                best_node = selected_nodes[-1]  # Best node is the last one (highest value)
                 
                 print(f"Selected {len(selected_nodes)} nodes to expand")
                 
@@ -393,7 +378,7 @@ def run_sudoku(args, model):
                             break
                     for child in node.children:
                         if child.value is not None:
-                            nodes_to_explore.append(ValuedNode(child, child.value))
+                            nodes_to_explore.append(child)
 
                 atts += 1
                 

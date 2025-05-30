@@ -15,7 +15,6 @@ class SudokuInstructions(BaseInstructions):
     """
     def __init__(self):
         # System instructions for MCTS
-        super().__init__()
         self.system_instruction_prior = """
 You are helping solve Sudoku puzzles using a tree-based search approach. Sudoku is a puzzle where you fill a grid with numbers 1 through {grid_size} so that each row, column, and box has no repeated numbers.
 
@@ -394,6 +393,9 @@ Replace `<dictionary_of_values>` with a dictionary mapping move indices to value
                 "moves": "{0: 'Place 3 at cell (0, 1)', 1: 'Place 7 at cell (0, 1)', 2: 'Place 8 at cell (0, 2)', 3: 'Place 5 at cell (0, 2)', 4: 'Place 3 at cell (1, 0)', 5: 'Place 5 at cell (1, 0)',...}"
             }
         }
+
+        super().__init__()
+
 
     def _format_board_example(self, board):
         """

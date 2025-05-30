@@ -270,7 +270,7 @@ def check_json_list(json_list):
     return None
 
 
-def create_sorted_nodes_by_value(nodes, use_adjusted_value=True):
+def create_sorted_nodes_by_value(nodes, use_adjusted_value=False):
     """Create a list of nodes sorted by their value (ascending).
 
     Args:
@@ -399,7 +399,7 @@ def get_sudoku_output_path(output_dir, search_method, batch_num, batch_size, sud
     if search_method == "mcts":
         # Convert c_value to integer by multiplying by 10 to avoid decimal points in filenames
         c_value_int = int(c_value * 10) if c_value is not None else 5  # Default to 0.5 if not specified
-        return f"{base_path}_llm_mcts_mtu_{max_token_usage}_c{c_value_int}.pkl"
+        return f"{base_path}_mcts_mtu_{max_token_usage}_c{c_value_int}.pkl"
     elif search_method == "lfs":
         return f"{base_path}_lfs_mtu_{max_token_usage}.pkl"
     elif search_method == "bestfs":
@@ -441,7 +441,7 @@ def get_countdown_output_path(output_dir, search_method, batch_num, batch_size, 
     if search_method == "mcts":
         # Convert c_value to integer by multiplying by 10 to avoid decimal points in filenames
         c_value_int = int(c_value * 10) if c_value is not None else 5  # Default to 0.5 if not specified
-        return f"{base_path}_llm_mcts_mtu_{max_token_usage}_c{c_value_int}.pkl"
+        return f"{base_path}_mcts_mtu_{max_token_usage}_c{c_value_int}.pkl"
     elif search_method == "lfs":
         return f"{base_path}_lfs_mtu_{max_token_usage}.pkl"
     elif search_method == "bestfs":
