@@ -10,7 +10,6 @@ import math
 
 import json5
 import openai
-from openai import AzureOpenAI
 
 from dotenv import load_dotenv
 
@@ -243,18 +242,10 @@ def create_openai_client(model_type, timeout=300, is_azure=False):
             timeout=timeout
         )
     elif model_type.lower() == "openai":
-        if is_azure:
-            return AzureOpenAI(
-                api_version="2024-12-01-preview",
-                azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-                api_key=os.getenv("AZURE_OPENAI_KEY"),
-                timeout=timeout
-            )
-        else:
-            return openai.OpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"),
-                timeout=timeout
-            )
+        return openai.OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            timeout=timeout
+        )
     else:
         raise ValueError(f"Model type {model_type} is not supported yet.")
 

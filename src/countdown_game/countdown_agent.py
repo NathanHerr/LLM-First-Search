@@ -1,6 +1,7 @@
+import openai
 import regex
 import tenacity
-import openai
+
 from src.base_game.base_agent import BaseAgent, BaseInstructions
 from src.utils.common_utils import check_json_list
 

@@ -1,10 +1,11 @@
 '''
 CountDown class for generating questions and trees
 '''
-import random
 import itertools
+import random
 
 from src.utils.countdown_utils import combine_nums
+
 
 class CountDown(object):
     def __init__(self, max_target=24, start_size=4, min_target=10):

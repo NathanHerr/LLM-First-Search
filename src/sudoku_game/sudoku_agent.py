@@ -1,10 +1,12 @@
+import numpy as np
+import openai
 import regex
 import tenacity
-import openai
-import numpy as np
+
 from src.base_game.base_agent import BaseAgent, BaseInstructions
 from src.utils.common_utils import check_json_list
 from src.utils.sudoku_utils import board_to_string
+
 
 class SudokuInstructions(BaseInstructions):
     """

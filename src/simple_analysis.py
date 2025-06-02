@@ -14,17 +14,18 @@ This will automatically:
 """
 
 import argparse
+import glob
 import os
 import pickle
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-import pandas as pd
-from pathlib import Path
-import glob
-from collections import defaultdict
 import re
 import sys
+from collections import defaultdict
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
 # Add the project root to Python path for pickle loading
 project_root = Path(__file__).parent.parent

@@ -11,12 +11,8 @@ import argparse
 import os
 import pickle
 import random
-import sys
-
-import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
 import time
+
 from sudoku import Sudoku
 
 

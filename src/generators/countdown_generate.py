@@ -1,15 +1,17 @@
 """
 Script for generating data for the countdown task.
 """
-import json
 import argparse
-import random
+import json
 import os
+import random
 import sys
 import time
+
 from tqdm import tqdm
 
 from src.generators.countdown import CountDown
+
 
 def parse_arguments():
     """Parse command line arguments."""

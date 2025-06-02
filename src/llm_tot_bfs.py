@@ -4,6 +4,7 @@ import random
 import time
 
 import numpy as np
+from dotenv import load_dotenv
 from tqdm import tqdm
 
 import src.utils.sudoku_utils as sudoku_utils
@@ -26,14 +27,13 @@ from src.utils.common_utils import (
 )
 from src.utils.countdown_utils import mult_heuristic, evaluate_child_node_values, \
     get_countdown_data_path
-# Import common tree components
-from src.utils.tree_utils import PathNode, Explorer
 from src.utils.sudoku_utils import (
     update_sudoku_metrics_log,
     calculate_sudoku_accuracy_metrics,
     find_best_board_state, evaluate_child_moves, get_sudoku_data_path
 )
-from dotenv import load_dotenv
+# Import common tree components
+from src.utils.tree_utils import PathNode, Explorer
 
 """
 Tree of Thought BFS Implementation - Works with both Countdown and Sudoku
