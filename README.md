@@ -347,7 +347,7 @@ The analysis automatically computes and compares:
 ```bash
 ./scripts/run_game_batches.sh countdown {method_name} \
     --data-dir ./data/countdown \
-    --output-dir ./data/countdown/results \
+    --output-dir ./results \
     --conda-env llmfirst \
     --model-type openai \
     --model-name {model_name} \
@@ -370,12 +370,12 @@ The analysis automatically computes and compares:
 | `reasoning_model` | 0 (disabled), 1 (enabled)                      | Whether reasoning is enabled (should be 0 for `gpt-4o`, 1 for `o3-mini`) |
 | `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`            | Search method to run                                        |
 
-## Sudoku
+### Sudoku
 
 ```bash
 ./scripts/run_game_batches.sh sudoku {method_name}\
     --data-dir ./data/sudoku \
-    --output-dir ./data/sudoku/results \
+    --output-dir ./results \
     --conda-env llmfirst \
     --model-type openai \
     --model-name {model_name} \
@@ -403,23 +403,26 @@ The analysis automatically computes and compares:
 | `reasoning_model` | 0 (disabled), 1 (enabled)              | Whether reasoning is enabled (0 for `gpt-4o`, 1 for `o3-mini`) |
 | `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`    | Search method to run                                       |
 
-### AUP (Area Under Performance Profile) Metrics
+### Analysis
 
-The analysis now includes sophisticated **AUP calculations** that provide a more robust evaluation of method performance:
+To generate a comparable analysis, run the following commands. Note that the results have been simplified for easier comparison but still retain enough detail for meaningful evaluation.
+#### GPT-4o
 
-#### Win Rate AUP
-- Measures **consistency** of win rate performance across different tasks
-- Higher values indicate methods that perform well across diverse problem types
-- Accounts for performance ratios relative to the best-performing method on each task
+```bash
+python src/simple_analysis.py \
+    --data_dir ./results \
+    --output_dir ./analysis/ \
+    --model gpt-4o \
+    --methods "tot_bfs,bestfs,mcts,lfs"
+```
 
-#### Efficiency Score AUP  
-- Combines both **win rate achievement** and **token efficiency**
-- Calculated as (best_win_rate/method_win_rate) × (method_tokens/best_tokens)
-- Provides a holistic view of method performance considering computational cost
-- Ideal for identifying methods that achieve good results with reasonable resource usage
+#### o3-mini
 
-#### How AUP Works
-1. **Performance Ratios**: For each task, calculate how each method compares to the best performer
-2. **Performance Profile**: Create a curve showing the fraction of tasks where performance ratio ≤ τ 
-3. **Area Calculation**: Use trapezoidal integration to compute the area under the performance profile
-4. **Higher AUP = Better**: Methods with consistently good performance across tasks achieve higher AUP scores
+```bash
+python src/simple_analysis.py \
+    --data_dir ./results \
+    --output_dir ./analysis/ \
+    --model o3-mini \
+    --methods "tot_bfs,bestfs,mcts,lfs"
+
+```
