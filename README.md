@@ -83,6 +83,8 @@ echo "OPENAI_API_KEY=your_openai_api_key_here" >> .env
 
 ## 📊 Data Generation
 
+> **📌 Note**: This project already includes the datasets used to generate the results presented in our paper. You can immediately proceed to the [🔬 Reproducing Paper Results](#-reproducing-paper-results) section to reproduce our results. The data generation instructions below are only needed if you want to create new datasets with different parameters or sample sizes.
+
 ### Countdown Data Generation
 
 Generate Countdown puzzles with the following command:
@@ -340,7 +342,7 @@ The analysis automatically computes and compares:
 * The Excel output provides detailed breakdowns for further statistical analysis
 * **AUP metrics are especially useful** for comparing methods across heterogeneous task sets
 
-## Reproducing Paper Results
+## 🔬 Reproducing Paper Results
 
 ### Countdown
 
