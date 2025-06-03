@@ -3,6 +3,18 @@
 Simple script to analyze and compare different methods across tasks.
 Automatically detects available methods and tasks from data directories.
 
+Features:
+- Automatic detection of methods and tasks from pickle files
+- Win rate comparison plots
+- Token usage analysis
+- Efficiency analysis (win rate vs token usage)
+- AUP (Area Under Performance Profile) calculation for both win rate and efficiency metrics
+- Excel and CSV export with multiple sheets/files
+
+AUP Metrics:
+- Win Rate AUP: Measures how consistently a method performs well across tasks
+- Efficiency AUP: Combines win rate and token efficiency for overall performance assessment
+
 Usage:
     python simple_analysis.py --data_dir /path/to/results --output_dir /path/to/output
 
@@ -10,6 +22,7 @@ This will automatically:
 - Detect all available methods and tasks
 - Generate win rate comparisons
 - Create performance summaries
+- Calculate AUP (Area Under Performance Profile) values
 - Save results as plots and Excel files
 """
 
@@ -26,6 +39,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
+# Try to import openpyxl for Excel support, fall back to xlsxwriter
+try:
+    import openpyxl
+    EXCEL_ENGINE = 'openpyxl'
+except ImportError:
+    try:
+        import xlsxwriter
+        EXCEL_ENGINE = 'xlsxwriter'
+    except ImportError:
+        EXCEL_ENGINE = None
+        print("⚠️  Warning: Neither openpyxl nor xlsxwriter found. Excel output may not work.")
 
 # Add the project root to Python path for pickle loading
 project_root = Path(__file__).parent.parent
@@ -278,9 +303,109 @@ def compute_metrics(games_data, method_name, task_name):
         'game_token_usages': game_token_usages
     }
 
+def calculate_aup_values(results):
+    """
+    Calculate AUP (Area Under Performance Profile) values for WinRate and EfficiencyScore.
+    
+    Args:
+        results: Dictionary of {task_name: {method: metrics}}
+    
+    Returns:
+        dict: AUP values for each method and metric type
+    """
+    print("📊 Calculating AUP values...")
+    
+    # Prepare tau values for performance profile (logarithmic scale from 1 to 10)
+    tau_values = np.logspace(0, np.log10(10), 200)
+    
+    # Initialize AUP results
+    aup_results = {
+        'WinRate': {},
+        'EfficiencyScore': {}
+    }
+    
+    # Get all methods
+    all_methods = set()
+    for task_results in results.values():
+        all_methods.update(task_results.keys())
+    
+    # Calculate performance ratios for each metric
+    method_ratios = {
+        'WinRate': {},
+        'EfficiencyScore': {}
+    }
+    
+    # First pass: find best performance for each task
+    best_tokens = {}
+    best_win_rates = {}
+    
+    for task_name, task_results in results.items():
+        best_tokens[task_name] = float('inf')
+        best_win_rates[task_name] = float('-inf')
+        
+        # Find best values for each metric
+        for method_name, metrics in task_results.items():
+            if metrics is None:
+                continue
+            
+            best_tokens[task_name] = min(best_tokens[task_name], metrics["avg_tokens"])
+            best_win_rates[task_name] = max(best_win_rates[task_name], metrics["overall_win_rate"])
+    
+    # Second pass: calculate ratios and AUP for each method
+    for method_name in all_methods:
+        win_rate_ratios = []
+        efficiency_score_ratios = []
+        
+        for task_name, task_results in results.items():
+            metrics = task_results.get(method_name)
+            
+            if metrics is None:
+                # If method doesn't have data for this task, assign infinite ratio (worst performance)
+                win_rate_ratios.append(float('inf'))
+                efficiency_score_ratios.append(float('inf'))
+                continue
+            
+            # Win rate ratio: best_win_rate / method_win_rate
+            if metrics["overall_win_rate"] > 0:
+                win_rate_ratio = best_win_rates[task_name] / metrics["overall_win_rate"]
+            else:
+                win_rate_ratio = float('inf')
+            win_rate_ratios.append(win_rate_ratio)
+            
+            # Efficiency score ratio: (best_win_rate/win_rate) * (tokens/best_tokens)
+            if metrics["overall_win_rate"] > 0 and best_tokens[task_name] > 0:
+                wr_ratio = best_win_rates[task_name] / metrics["overall_win_rate"]
+                token_ratio = metrics["avg_tokens"] / best_tokens[task_name]
+                efficiency_score_ratio = wr_ratio * token_ratio
+            else:
+                efficiency_score_ratio = float('inf')
+            efficiency_score_ratios.append(efficiency_score_ratio)
+        
+        # Store ratios
+        method_ratios['WinRate'][method_name] = win_rate_ratios
+        method_ratios['EfficiencyScore'][method_name] = efficiency_score_ratios
+        
+        # Calculate AUP for each metric
+        for metric_name in ['WinRate', 'EfficiencyScore']:
+            ratios = method_ratios[metric_name][method_name]
+            
+            # Calculate performance profile
+            profile = []
+            for tau in tau_values:
+                count = sum(1 for r in ratios if r <= tau)
+                profile.append(count / len(ratios) if len(ratios) > 0 else 0)
+            
+            # Calculate AUP using trapezoidal integration
+            aup = np.trapz(profile, tau_values)
+            aup_results[metric_name][method_name] = aup
+            
+            print(f"    {method_name} - {metric_name}: AUP = {aup:.3f}")
+    
+    return aup_results
+
 def create_summary_plots(results, output_dir, model_name):
     """
-    Create simple, clear summary plots.
+    Create simple, clear summary plots including AUP values.
     """
     print("📈 Creating summary plots...")
     
@@ -347,13 +472,41 @@ def create_summary_plots(results, output_dir, model_name):
     plt.savefig(os.path.join(output_dir, 'efficiency.png'), dpi=300, bbox_inches='tight')
     plt.close()
     
+    # 4. AUP Values Bar Plot
+    aup_values = calculate_aup_values(results)
+    
+    # Prepare AUP data for plotting
+    aup_plot_data = []
+    for metric_type in ['WinRate', 'EfficiencyScore']:
+        for method, aup in aup_values[metric_type].items():
+            aup_plot_data.append({
+                'Method': method,
+                'Metric': 'Win Rate AUP' if metric_type == 'WinRate' else 'Efficiency Score AUP',
+                'AUP': aup
+            })
+    
+    aup_df = pd.DataFrame(aup_plot_data)
+    
+    if not aup_df.empty:
+        plt.figure(figsize=(12, 6))
+        sns.barplot(data=aup_df, x='Method', y='AUP', hue='Metric')
+        plt.title(f'AUP (Area Under Performance Profile) - {model_name}')
+        plt.xticks(rotation=45, ha='right')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'aup_values.png'), dpi=300, bbox_inches='tight')
+        plt.close()
+    
     print(f"✅ Plots saved to {output_dir}")
 
 def create_summary_table(results, output_dir, model_name):
     """
-    Create Excel summary table.
+    Create Excel summary table including AUP values.
     """
     print("📋 Creating summary table...")
+    
+    # Calculate AUP values
+    aup_values = calculate_aup_values(results)
     
     # Prepare data
     summary_data = []
@@ -370,18 +523,41 @@ def create_summary_table(results, output_dir, model_name):
                     'Total Wins': metrics['total_wins']
                 })
     
+    # Prepare AUP summary data
+    aup_summary_data = []
+    for method_name in aup_values['WinRate'].keys():
+        aup_summary_data.append({
+            'Method': method_name,
+            'Win Rate AUP': f"{aup_values['WinRate'][method_name]:.3f}",
+            'Efficiency Score AUP': f"{aup_values['EfficiencyScore'][method_name]:.3f}"
+        })
+    
     df = pd.DataFrame(summary_data)
+    aup_df = pd.DataFrame(aup_summary_data)
     
     if not df.empty:
-        # Save as Excel
+        # Save main results as Excel with multiple sheets
         excel_path = os.path.join(output_dir, 'summary.xlsx')
-        df.to_excel(excel_path, index=False)
+        if EXCEL_ENGINE:
+            with pd.ExcelWriter(excel_path, engine=EXCEL_ENGINE) as writer:
+                df.to_excel(writer, sheet_name='Results', index=False)
+                if not aup_df.empty:
+                    aup_df.to_excel(writer, sheet_name='AUP Values', index=False)
+            print(f"✅ Summary Excel file saved to {excel_path}")
+        else:
+            print("⚠️  Skipping Excel file creation (no Excel engine available)")
         
         # Save as CSV too
         csv_path = os.path.join(output_dir, 'summary.csv')
         df.to_csv(csv_path, index=False)
         
-        print(f"✅ Summary tables saved to {excel_path} and {csv_path}")
+        aup_csv_path = os.path.join(output_dir, 'aup_summary.csv')
+        if not aup_df.empty:
+            aup_df.to_csv(aup_csv_path, index=False)
+        
+        print(f"✅ Summary tables saved to {csv_path}")
+        if not aup_df.empty:
+            print(f"✅ AUP summary saved to {aup_csv_path}")
         
         # Print summary to console
         print("\n📊 SUMMARY:")
@@ -392,6 +568,13 @@ def create_summary_table(results, output_dir, model_name):
             print("-" * 40)
             for _, row in task_data.iterrows():
                 print(f"  {row['Method']:12s}: {row['Win Rate (%)']}% win rate, {row['Avg Tokens']} tokens")
+        
+        # Print AUP summary
+        if not aup_df.empty:
+            print("\n📊 AUP VALUES:")
+            print("=" * 80)
+            for _, row in aup_df.iterrows():
+                print(f"  {row['Method']:12s}: Win Rate AUP = {row['Win Rate AUP']}, Efficiency Score AUP = {row['Efficiency Score AUP']}")
     else:
         print("❌ No data for summary table")
 
@@ -434,8 +617,13 @@ def main():
     print("  - win_rates.png: Win rate comparison across tasks")
     print("  - token_usage.png: Average token usage comparison") 
     print("  - efficiency.png: Win rate vs token usage scatter plot")
-    print("  - summary.xlsx: Detailed results table")
+    print("  - aup_values.png: AUP (Area Under Performance Profile) comparison")
+    print("  - summary.xlsx: Detailed results table with AUP values")
     print("  - summary.csv: Detailed results table (CSV format)")
+    print("  - aup_summary.csv: AUP values summary (CSV format)")
+    print("\nAUP Metrics:")
+    print("  - Win Rate AUP: Consistency of win rate across tasks")
+    print("  - Efficiency Score AUP: Combined win rate and token efficiency")
 
 if __name__ == "__main__":
     main() 

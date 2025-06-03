@@ -252,7 +252,7 @@ Each script contains a `run` function tailored to the game domain, maintaining a
 
 ## 📊 Analysis
 
-After running experiments, you can analyze the results using the included analysis script. The script automatically detects available methods and tasks from your result directories and generates comprehensive comparisons.
+After running experiments, you can analyze the results using the included analysis script. The script automatically detects available methods and tasks from your result directories and generates comprehensive comparisons including **AUP (Area Under Performance Profile)** calculations.
 
 ### Basic Analysis
 
@@ -283,13 +283,17 @@ The analysis script automatically generates:
 * **`win_rates.png`**: Bar chart comparing win rates across methods and tasks
 * **`token_usage.png`**: Bar chart comparing average token usage across methods
 * **`efficiency.png`**: Scatter plot showing win rate vs token usage (efficiency analysis)
+* **`aup_values.png`**: Bar chart comparing AUP (Area Under Performance Profile) metrics
 
 #### 📋 Summary Tables
-* **`summary.xlsx`**: Detailed Excel spreadsheet with all metrics
-* **`summary.csv`**: CSV version of the summary data
+* **`summary.xlsx`**: Multi-sheet Excel file with detailed metrics and AUP values
+  - **Results sheet**: Win rates, token usage, and basic metrics
+  - **AUP Values sheet**: Area Under Performance Profile calculations
+* **`summary.csv`**: CSV version of the main results data
+* **`aup_summary.csv`**: Standalone CSV with AUP calculations
 
 #### 🖥️ Console Output
-The script prints a detailed summary to the console:
+The script prints a detailed summary to the console including AUP values:
 
 ```
 📊 SUMMARY:
@@ -307,6 +311,13 @@ Sudoku (4x4, medium):
   mcts        : 60.0% win rate, 2100 tokens
   bestfs      : 55.0% win rate, 1800 tokens
   lfs         : 75.0% win rate, 1900 tokens
+
+📊 AUP VALUES:
+================================================================================
+  mcts        : Win Rate AUP = 6.234, Efficiency Score AUP = 4.567
+  bestfs      : Win Rate AUP = 5.123, Efficiency Score AUP = 3.789
+  lfs         : Win Rate AUP = 7.456, Efficiency Score AUP = 6.234
+  tot_bfs     : Win Rate AUP = 4.567, Efficiency Score AUP = 3.123
 ```
 
 ### Key Metrics
@@ -317,13 +328,17 @@ The analysis automatically computes and compares:
 * **Token Usage**: Average number of tokens consumed per game
 * **Efficiency**: Win rate relative to computational cost
 * **Game Coverage**: Number of games attempted and solved
+* **Win Rate AUP**: Measures how consistently a method performs well across tasks
+* **Efficiency Score AUP**: Combines win rate and token efficiency for overall performance assessment
 
 ### Analysis Tips
 
 * Run analysis on specific subsets using the `--methods` parameter to focus comparisons
 * Compare the same model across different tasks to understand method strengths
 * Use the efficiency plots to identify methods that achieve good win rates with lower token costs
+* **Check AUP values** to identify methods with the most consistent performance across diverse tasks
 * The Excel output provides detailed breakdowns for further statistical analysis
+* **AUP metrics are especially useful** for comparing methods across heterogeneous task sets
 
 ## Reproducing Paper Results
 
@@ -387,3 +402,24 @@ The analysis automatically computes and compares:
 | `model_name`      | `gpt-4o` (non-reasoning), `o3-mini` (reasoning) | `gpt-4o` disables reasoning (0), `o3-mini` enables (1)    |
 | `reasoning_model` | 0 (disabled), 1 (enabled)              | Whether reasoning is enabled (0 for `gpt-4o`, 1 for `o3-mini`) |
 | `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`    | Search method to run                                       |
+
+### AUP (Area Under Performance Profile) Metrics
+
+The analysis now includes sophisticated **AUP calculations** that provide a more robust evaluation of method performance:
+
+#### Win Rate AUP
+- Measures **consistency** of win rate performance across different tasks
+- Higher values indicate methods that perform well across diverse problem types
+- Accounts for performance ratios relative to the best-performing method on each task
+
+#### Efficiency Score AUP  
+- Combines both **win rate achievement** and **token efficiency**
+- Calculated as (best_win_rate/method_win_rate) × (method_tokens/best_tokens)
+- Provides a holistic view of method performance considering computational cost
+- Ideal for identifying methods that achieve good results with reasonable resource usage
+
+#### How AUP Works
+1. **Performance Ratios**: For each task, calculate how each method compares to the best performer
+2. **Performance Profile**: Create a curve showing the fraction of tasks where performance ratio ≤ τ 
+3. **Area Calculation**: Use trapezoidal integration to compute the area under the performance profile
+4. **Higher AUP = Better**: Methods with consistently good performance across tasks achieve higher AUP scores
