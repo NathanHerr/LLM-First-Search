@@ -423,6 +423,6 @@ python src/simple_analysis.py \
     --data_dir ./results \
     --output_dir ./analysis/o3mini \
     --model o3-mini \
-    --methods "tot_bfs,bestfs,mcts,lfs"
+    --methods "bestfs,mcts,lfs"
 
 ```
