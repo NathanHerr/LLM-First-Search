@@ -411,7 +411,7 @@ To generate a comparable analysis, run the following commands. Note that the res
 ```bash
 python src/simple_analysis.py \
     --data_dir ./results \
-    --output_dir ./analysis/ \
+    --output_dir ./analysis/gpt4o \
     --model gpt-4o \
     --methods "tot_bfs,bestfs,mcts,lfs"
 ```
@@ -421,7 +421,7 @@ python src/simple_analysis.py \
 ```bash
 python src/simple_analysis.py \
     --data_dir ./results \
-    --output_dir ./analysis/ \
+    --output_dir ./analysis/o3mini \
     --model o3-mini \
     --methods "tot_bfs,bestfs,mcts,lfs"
 
