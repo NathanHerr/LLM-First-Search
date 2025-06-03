@@ -362,13 +362,13 @@ The analysis automatically computes and compares:
     --session-prefix game
 ```
 
-| Parameter         | Values                                         | Notes                                                      |
-|-------------------|------------------------------------------------|------------------------------------------------------------|
-| `game_diff`       | 3, 5, 7                                        | Countdown difficulty level                                  |
-| `max_token_usage` | 1,000,000                                      | Max tokens allowed per run                                  |
+| Parameter         | Values                                       | Notes                                                      |
+|-------------------|----------------------------------------------|------------------------------------------------------------|
+| `game_diff`       | 3, 5, 7                                      | Countdown difficulty level                                  |
+| `max_token_usage` | 1000000                                      | Max tokens allowed per run                                  |
 | `model_name`      | `gpt-4o` (non-reasoning model), `o3-mini` (reasoning model) | `gpt-4o` **does not** use the reasoning module; `o3-mini` **uses** the reasoning module |
-| `reasoning_model` | 0 (disabled), 1 (enabled)                      | Whether reasoning is enabled (should be 0 for `gpt-4o`, 1 for `o3-mini`) |
-| `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`            | Search method to run                                        |
+| `reasoning_model` | 0 (disabled), 1 (enabled)                    | Whether reasoning is enabled (should be 0 for `gpt-4o`, 1 for `o3-mini`) |
+| `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`           | Search method to run                                        |
 
 ### Sudoku
 
@@ -392,16 +392,16 @@ The analysis automatically computes and compares:
     --session-prefix game
 ```
 
-| Parameter         | Values                                 | Notes                                                      |
-|-------------------|----------------------------------------|------------------------------------------------------------|
-| `sudoku_size`     | 4, 6                                   | Sudoku grid size (e.g., 4x4, 6x6)                         |
-| `sudoku_width`    | 2                                     | Width of each Sudoku block                                 |
-| `sudoku_height`   | 2 (for size 4), 3 (for size 6)         | Height of each Sudoku block                                |
-| `sudoku_difficulty`| `hard` (size 4), `medium` (size 6)    | Difficulty level of Sudoku puzzles                         |
-| `max_token_usage` | 100,000 (size 4), 500,000 (size 6)    | Max tokens allowed per run                                 |
+| Parameter         | Values                               | Notes                                                      |
+|-------------------|--------------------------------------|------------------------------------------------------------|
+| `sudoku_size`     | 4, 6                                 | Sudoku grid size (e.g., 4x4, 6x6)                         |
+| `sudoku_width`    | 2                                   | Width of each Sudoku block                                 |
+| `sudoku_height`   | 2 (for size 4), 3 (for size 6)       | Height of each Sudoku block                                |
+| `sudoku_difficulty`| `hard` (size 4), `medium` (size 6)  | Difficulty level of Sudoku puzzles                         |
+| `max_token_usage` | 100000 (size 4), 500000 (size 6)    | Max tokens allowed per run                                 |
 | `model_name`      | `gpt-4o` (non-reasoning), `o3-mini` (reasoning) | `gpt-4o` disables reasoning (0), `o3-mini` enables (1)    |
-| `reasoning_model` | 0 (disabled), 1 (enabled)              | Whether reasoning is enabled (0 for `gpt-4o`, 1 for `o3-mini`) |
-| `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`    | Search method to run                                       |
+| `reasoning_model` | 0 (disabled), 1 (enabled)            | Whether reasoning is enabled (0 for `gpt-4o`, 1 for `o3-mini`) |
+| `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`  | Search method to run                                       |
 
 ### Analysis
 
