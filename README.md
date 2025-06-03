@@ -12,11 +12,38 @@ We evaluate LFS on two reasoning-intensive domains, **Countdown** and **Sudoku**
 * **Best-First Search (BestFS)**
 * **Monte Carlo Tree Search (MCTS)**
 
+<div align="center">
+  <img src="images/LLM_First_Search.png" alt="Description" width="500"/>
+</div>
+
 ## 🔍 Key Results
 
 * ✅ Outperforms traditional search strategies on **harder tasks** without tuning.
 * ⚡ Achieves **greater computational efficiency**, especially with stronger LLMs.
 * 📈 **Scales better** with model size and compute budget, benefiting from its LLM-centric design.
+
+### WinRate (%) Across All Tasks
+
+| Model    | Method                                         | Diff 3       | Diff 5       | Diff 7       | 4x4         | 6x6         |
+|----------|------------------------------------------------|--------------|--------------|--------------|-------------|-------------|
+| GPT-4o   | <span style="color:#AA4499"><b>ToT-BFS</b></span>       | 82.11        | 9.47         | 0.00         | 53.68       | 0.00        |
+|          | <span style="color:#88CCEE"><b>BestFS</b></span>        | **100.00**   | 49.47        | 11.11        | 41.05       | 0.00        |
+|          | <span style="color:#CC6677"><b>MCTS (c=0.5)</b></span>  | **100.00**   | 60.00        | 32.63        | **100.00**  | 0.00        |
+|          | <span style="color:#AA4499"><b>MCTS (c=1.0)</b></span>  | **100.00**   | 62.22        | 33.33        | 2.22        | 0.00        |
+|          | <span style="color:#882255"><b>MCTS (c=2.5)</b></span>  | **100.00**   | 60.00        | 24.44        | 0.00        | 0.00        |
+|          | <span style="color:#44AA99"><b>LFS (ours)</b></span>    | **100.00**   | **63.16**    | **47.37**    | 96.84       | **2.22**    |
+| o3-mini  | <span style="color:#88CCEE"><b>BestFS</b></span>        | --           | 52.63        | 13.33        | 61.05       | 0.00        |
+|          | <span style="color:#CC6677"><b>MCTS (c=0.5)</b></span>  | --           | 69.47        | 41.05        | 90.53       | 4.21        |
+|          | <span style="color:#44AA99"><b>LFS (ours)</b></span>    | --           | **70.53**    | **78.95**    | **96.84**   | **25.26**   |
+
+### Area Under the Performance Profile (AUP)
+
+| Metric          | Model    | <span style="color:#AA4499"><b>ToT-BFS</b></span> | <span style="color:#88CCEE"><b>BestFS</b></span> | <span style="color:#CC6677"><b>MCTS (c=0.5)</b></span> | <span style="color:#44AA99"><b>LFS (ours)</b></span> |
+|-----------------|----------|------------------|------------------|----------------------------|----------------------------|
+| WinRate         | GPT-4o   | 4.06             | 5.98             | 7.09                       | **8.99**                   |
+|                 | o3-mini  | --               | 4.23             | 6.00                       | **7.20**                   |
+| EfficiencyScore | GPT-4o   | 3.68             | 2.67             | 3.68                       | **4.70**                   |
+|                 | o3-mini  | --               | 3.24             | 5.61                       | **7.20**                   |
 
 ## 🚀 Quick Start
 
@@ -297,3 +324,66 @@ The analysis automatically computes and compares:
 * Compare the same model across different tasks to understand method strengths
 * Use the efficiency plots to identify methods that achieve good win rates with lower token costs
 * The Excel output provides detailed breakdowns for further statistical analysis
+
+## Reproducing Paper Results
+
+### Countdown
+
+```bash
+./scripts/run_game_batches.sh countdown {method_name} \
+    --data-dir ./data/countdown \
+    --output-dir ./data/countdown/results \
+    --conda-env llmfirst \
+    --model-type openai \
+    --model-name {model_name} \
+    --reasoning {reasoning_model} \
+    --split val \
+    --countdown-difficulty {game_diff} \
+    --num-batches 20 \
+    --max-token-usage {max_token_usage} \
+    --timeout 300 \
+    --num-its 5 \
+    --batch-size 1 \
+    --session-prefix game
+```
+
+| Parameter         | Values                                         | Notes                                                      |
+|-------------------|------------------------------------------------|------------------------------------------------------------|
+| `game_diff`       | 3, 5, 7                                        | Countdown difficulty level                                  |
+| `max_token_usage` | 1,000,000                                      | Max tokens allowed per run                                  |
+| `model_name`      | `gpt-4o` (non-reasoning model), `o3-mini` (reasoning model) | `gpt-4o` **does not** use the reasoning module; `o3-mini` **uses** the reasoning module |
+| `reasoning_model` | 0 (disabled), 1 (enabled)                      | Whether reasoning is enabled (should be 0 for `gpt-4o`, 1 for `o3-mini`) |
+| `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`            | Search method to run                                        |
+
+## Sudoku
+
+```bash
+./scripts/run_game_batches.sh sudoku {method_name}\
+    --data-dir ./data/sudoku \
+    --output-dir ./data/sudoku/results \
+    --conda-env llmfirst \
+    --model-type openai \
+    --model-name {model_name} \
+    --reasoning {reasoning_model} \
+    --sudoku-difficulty {sudoku_diff} \
+    --sudoku-size {sudoku_size} \
+    --sudoku-width {sudoku_width}  \
+    --sudoku-height {sudoku_height} \
+    --num-batches 20 \
+    --max-token-usage {max_token_usage} \
+    --timeout 300 \
+    --num-its 5 \
+    --batch-size 1 \
+    --session-prefix game
+```
+
+| Parameter         | Values                                 | Notes                                                      |
+|-------------------|----------------------------------------|------------------------------------------------------------|
+| `sudoku_size`     | 4, 6                                   | Sudoku grid size (e.g., 4x4, 6x6)                         |
+| `sudoku_width`    | 2                                     | Width of each Sudoku block                                 |
+| `sudoku_height`   | 2 (for size 4), 3 (for size 6)         | Height of each Sudoku block                                |
+| `sudoku_difficulty`| `hard` (size 4), `medium` (size 6)    | Difficulty level of Sudoku puzzles                         |
+| `max_token_usage` | 100,000 (size 4), 500,000 (size 6)    | Max tokens allowed per run                                 |
+| `model_name`      | `gpt-4o` (non-reasoning), `o3-mini` (reasoning) | `gpt-4o` disables reasoning (0), `o3-mini` enables (1)    |
+| `reasoning_model` | 0 (disabled), 1 (enabled)              | Whether reasoning is enabled (0 for `gpt-4o`, 1 for `o3-mini`) |
+| `method_name`     | `lfs`, `mcts`, `bestfs`, `tot_bfs`    | Search method to run                                       |
