@@ -1,6 +1,6 @@
 # 🧠 LLM-First Search (LFS): Self-Guided Search with Language Models
 
-This repository accompanies our paper introducing **LLM-First Search (LFS)**, a novel self-guided search method that empowers Large Language Models (LLMs) to autonomously navigate and control the search process during problem-solving.
+This repository accompanies [our paper](https://arxiv.org/abs/2506.05213) introducing **LLM-First Search (LFS)**, a novel self-guided search method that empowers Large Language Models (LLMs) to autonomously navigate and control the search process during problem-solving.
 
 Unlike traditional search strategies that rely on fixed heuristics or hand-tuned exploration parameters (e.g., MCTS, BFS, BestFS), LFS puts the LLM in charge: the model itself decides whether to continue down a path or explore alternatives, guided by its own internal reasoning.
 
